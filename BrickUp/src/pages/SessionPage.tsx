@@ -145,29 +145,8 @@ function PartCard({
 }) {
   const isComplete = part.qty_found >= part.qty_needed;
 
-  function handleClick() {
-    if (!isComplete) {
-      onIncrement(part.id);
-    }
-  }
-
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    const input = prompt(`Set found count for "${part.part_name}" (0-${part.qty_needed}):`, String(part.qty_found));
-    if (input === null) return;
-    const val = parseInt(input, 10);
-    if (!isNaN(val)) {
-      const delta = val - part.qty_found;
-      if (delta !== 0) onIncrement(part.id, delta);
-    }
-  }
-
   return (
-    <div
-      className={`part-card ${isComplete ? 'complete' : ''}`}
-      onClick={handleClick}
-      onContextMenu={handleContextMenu}
-    >
+    <div className={`part-card ${isComplete ? 'complete' : ''}`}>
       <div className="part-img-container">
         {part.part_img_url ? (
           <img src={part.part_img_url} alt={part.part_name} className="part-img" loading="lazy" />
@@ -176,11 +155,25 @@ function PartCard({
         )}
       </div>
       <div className="color-swatch" style={{ backgroundColor: `#${part.color_rgb}` }} title={part.color_name} />
-      <div className="part-info">
-        <span className="part-name">{part.part_name}</span>
+      <span className="part-name">{part.part_name}</span>
+      <div className="part-counter">
+        <button
+          className="counter-btn"
+          onClick={() => onIncrement(part.id, -1)}
+          disabled={part.qty_found <= 0}
+        >
+          &minus;
+        </button>
         <span className="part-qty">
           {part.qty_found}/{part.qty_needed}
         </span>
+        <button
+          className="counter-btn"
+          onClick={() => onIncrement(part.id, 1)}
+          disabled={isComplete}
+        >
+          +
+        </button>
       </div>
     </div>
   );
