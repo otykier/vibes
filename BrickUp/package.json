@@ -8,8 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "npm run build && node -e \"const fs=require('fs');fs.rmSync('deploy-staging',{recursive:true,force:true});fs.mkdirSync('deploy-staging/BrickUp',{recursive:true});fs.cpSync('dist','deploy-staging/BrickUp',{recursive:true})\"",
-    "deploy": "gh-pages -d deploy-staging"
+    "deploy": "npm run build && gh-pages -d dist --repo https://github.com/otykier/pages-brickup.git"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
