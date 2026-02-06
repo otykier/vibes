@@ -129,16 +129,16 @@ export default function SessionPage() {
           <button className="btn-secondary" onClick={() => setShowQR(!showQR)}>
             {showQR ? 'Hide QR' : 'Share'}
           </button>
-          <button className="btn-danger" onClick={resetSession}>
+          <button className="btn-danger" onClick={() => { if (confirm('Reset all found counts to zero?')) resetSession(); }}>
             Reset
           </button>
         </div>
 
         {similarPartNum && (
           <div className="similar-filter-banner">
-            <span>Showing similar: {displayParts[0]?.part_name ?? similarPartNum}</span>
+            <span>All colors: {displayParts[0]?.part_name ?? similarPartNum}</span>
             <button className="btn-secondary" onClick={() => setSimilarPartNum(null)}>
-              Show all
+              Clear
             </button>
           </div>
         )}
@@ -327,7 +327,7 @@ function PartCard({
               className="context-menu-item"
               onClick={() => handleMenuAction(onFilterSimilar)}
             >
-              Filter similar
+              Show all colors
             </button>
           )}
         </div>

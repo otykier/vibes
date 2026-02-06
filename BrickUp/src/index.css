@@ -324,12 +324,13 @@ body {
   align-items: center;
   gap: 0.25rem;
   margin-top: 0.25rem;
+  width: 100%;
 }
 
 .counter-btn {
-  width: 44px;
+  flex: 1;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg);
   font-size: 1.3rem;
