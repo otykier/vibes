@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <div className="home">
-      <h1>BrickCheck</h1>
+      <h1>BrickUp</h1>
       <p>Look up a Lego set and collaboratively check off pieces.</p>
 
       <form onSubmit={handleSubmit}>

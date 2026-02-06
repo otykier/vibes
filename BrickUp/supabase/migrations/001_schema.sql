@@ -1,4 +1,4 @@
--- BrickCheck schema: sessions and session_parts tables
+-- BrickUp schema: sessions and session_parts tables
 
 CREATE TABLE sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
