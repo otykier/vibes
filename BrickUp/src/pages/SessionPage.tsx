@@ -25,7 +25,7 @@ export default function SessionPage() {
   const [similarPartNum, setSimilarPartNum] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const { copied, copy } = useClipboard();
-  const shareUrl = window.location.href;
+  const shareUrl = window.location.origin + window.location.pathname + window.location.hash;
 
   if (loading) return <div className="loading">Loading session...</div>;
   if (error) return <div className="error">Error: {error}</div>;
