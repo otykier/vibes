@@ -64,6 +64,20 @@ export function useSession(slug: string | undefined) {
   const incrementFound = useCallback(
     async (partId: number, delta: number = 1) => {
       if (!slug) return;
+
+      // Optimistic update
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          parts: prev.parts.map((p) => {
+            if (p.id !== partId) return p;
+            const newFound = Math.max(0, Math.min(p.qty_found + delta, p.qty_needed));
+            return { ...p, qty_found: newFound };
+          }),
+        };
+      });
+
       const { error: err } = await supabase.rpc('increment_found', {
         p_slug: slug,
         p_part_id: partId,
@@ -76,6 +90,16 @@ export function useSession(slug: string | undefined) {
 
   const resetSession = useCallback(async () => {
     if (!slug) return;
+
+    // Optimistic update
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        parts: prev.parts.map((p) => ({ ...p, qty_found: 0 })),
+      };
+    });
+
     const { error: err } = await supabase.rpc('reset_session', { p_slug: slug });
     if (err) console.error('reset_session error:', err.message);
   }, [slug]);

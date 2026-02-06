@@ -1,8 +1,18 @@
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSession } from '../hooks/useSession';
 import type { SessionPart } from '../types';
+
+function useClipboard() {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback(async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+  return { copied, copy };
+}
 
 type SortKey = 'color' | 'category' | 'status';
 type FilterKey = 'all' | 'found' | 'not-found' | 'complete';
@@ -12,7 +22,10 @@ export default function SessionPage() {
   const { data, loading, error, incrementFound, resetSession } = useSession(slug);
   const [sortBy, setSortBy] = useState<SortKey>('color');
   const [filterBy, setFilterBy] = useState<FilterKey>('all');
+  const [similarPartNum, setSimilarPartNum] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const { copied, copy } = useClipboard();
+  const shareUrl = window.location.href;
 
   if (loading) return <div className="loading">Loading session...</div>;
   if (error) return <div className="error">Error: {error}</div>;
@@ -29,15 +42,22 @@ export default function SessionPage() {
   const progressPct = totalNeeded > 0 ? Math.round((totalFound / totalNeeded) * 100) : 0;
 
   function filterParts(items: SessionPart[]) {
+    let result = items;
+
+    // Apply "similar" filter first
+    if (similarPartNum) {
+      result = result.filter((p) => p.part_num === similarPartNum);
+    }
+
     switch (filterBy) {
       case 'found':
-        return items.filter((p) => p.qty_found > 0);
+        return result.filter((p) => p.qty_found > 0);
       case 'not-found':
-        return items.filter((p) => p.qty_found < p.qty_needed);
+        return result.filter((p) => p.qty_found < p.qty_needed);
       case 'complete':
-        return items.filter((p) => p.qty_found >= p.qty_needed);
+        return result.filter((p) => p.qty_found >= p.qty_needed);
       default:
-        return items;
+        return result;
     }
   }
 
@@ -61,6 +81,12 @@ export default function SessionPage() {
 
   const displayParts = sortParts(filterParts(regularParts));
   const displaySpares = sortParts(filterParts(spareParts));
+
+  // Check if "filter similar" would show multiple colors for a given part_num
+  function hasSimilar(partNum: string) {
+    const colors = new Set(regularParts.filter((p) => p.part_num === partNum).map((p) => p.color_id));
+    return colors.size > 1;
+  }
 
   return (
     <div className="session-page">
@@ -108,9 +134,24 @@ export default function SessionPage() {
           </button>
         </div>
 
+        {similarPartNum && (
+          <div className="similar-filter-banner">
+            <span>Showing similar: {displayParts[0]?.part_name ?? similarPartNum}</span>
+            <button className="btn-secondary" onClick={() => setSimilarPartNum(null)}>
+              Show all
+            </button>
+          </div>
+        )}
+
         {showQR && (
           <div className="qr-container">
-            <QRCodeSVG value={window.location.href} size={160} />
+            <div className="share-url">
+              <code className="share-url-text">{shareUrl}</code>
+              <button className="btn-copy" onClick={() => copy(shareUrl)}>
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <QRCodeSVG value={shareUrl} size={160} />
             <p className="qr-hint">Scan to join this session</p>
           </div>
         )}
@@ -118,7 +159,12 @@ export default function SessionPage() {
 
       <div className="parts-grid">
         {displayParts.map((part) => (
-          <PartCard key={part.id} part={part} onIncrement={incrementFound} />
+          <PartCard
+            key={part.id}
+            part={part}
+            onIncrement={incrementFound}
+            onFilterSimilar={hasSimilar(part.part_num) ? () => setSimilarPartNum(part.part_num) : undefined}
+          />
         ))}
       </div>
 
@@ -127,7 +173,11 @@ export default function SessionPage() {
           <h2 className="spares-heading">Spare Parts</h2>
           <div className="parts-grid">
             {displaySpares.map((part) => (
-              <PartCard key={part.id} part={part} onIncrement={incrementFound} />
+              <PartCard
+                key={part.id}
+                part={part}
+                onIncrement={incrementFound}
+              />
             ))}
           </div>
         </>
@@ -136,17 +186,97 @@ export default function SessionPage() {
   );
 }
 
+interface ContextMenuState {
+  visible: boolean;
+  x: number;
+  y: number;
+}
+
 function PartCard({
   part,
   onIncrement,
+  onFilterSimilar,
 }: {
   part: SessionPart;
   onIncrement: (partId: number, delta?: number) => void;
+  onFilterSimilar?: () => void;
 }) {
   const isComplete = part.qty_found >= part.qty_needed;
+  const [menu, setMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0 });
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menu.visible) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenu((m) => ({ ...m, visible: false }));
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('touchstart', handleClick);
+    };
+  }, [menu.visible]);
+
+  function openMenu(clientX: number, clientY: number) {
+    // Position relative to the card
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    if (cardRect) {
+      setMenu({
+        visible: true,
+        x: clientX - cardRect.left,
+        y: clientY - cardRect.top,
+      });
+    }
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    longPressTimer.current = setTimeout(() => {
+      openMenu(x, y);
+    }, 500);
+  }
+
+  function handleTouchEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function handleTouchMove() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function handleContextMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    openMenu(e.clientX, e.clientY);
+  }
+
+  function handleMenuAction(action: () => void) {
+    action();
+    setMenu((m) => ({ ...m, visible: false }));
+  }
 
   return (
-    <div className={`part-card ${isComplete ? 'complete' : ''}`}>
+    <div
+      ref={cardRef}
+      className={`part-card ${isComplete ? 'complete' : ''}`}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+    >
       <div className="part-img-container">
         {part.part_img_url ? (
           <img src={part.part_img_url} alt={part.part_name} className="part-img" loading="lazy" />
@@ -175,6 +305,33 @@ function PartCard({
           +
         </button>
       </div>
+
+      {menu.visible && (
+        <div ref={menuRef} className="context-menu" style={{ top: menu.y, left: menu.x }}>
+          <button
+            className="context-menu-item"
+            onClick={() => handleMenuAction(() => onIncrement(part.id, -part.qty_found))}
+            disabled={part.qty_found <= 0}
+          >
+            Clear
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={() => handleMenuAction(() => onIncrement(part.id, part.qty_needed - part.qty_found))}
+            disabled={isComplete}
+          >
+            Complete
+          </button>
+          {onFilterSimilar && (
+            <button
+              className="context-menu-item"
+              onClick={() => handleMenuAction(onFilterSimilar)}
+            >
+              Filter similar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
