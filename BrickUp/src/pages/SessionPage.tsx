@@ -210,7 +210,7 @@ function PartCard({
   // Close menu on outside click
   useEffect(() => {
     if (!menu.visible) return;
-    function handleClick(e: MouseEvent) {
+    function handleClick(e: Event) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenu((m) => ({ ...m, visible: false }));
       }
