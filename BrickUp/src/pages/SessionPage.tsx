@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSession } from '../hooks/useSession';
 import type { SessionPart } from '../types';
@@ -186,12 +186,6 @@ export default function SessionPage() {
   );
 }
 
-interface ContextMenuState {
-  visible: boolean;
-  x: number;
-  y: number;
-}
-
 function PartCard({
   part,
   onIncrement,
@@ -202,17 +196,16 @@ function PartCard({
   onFilterSimilar?: () => void;
 }) {
   const isComplete = part.qty_found >= part.qty_needed;
-  const [menu, setMenu] = useState<ContextMenuState>({ visible: false, x: 0, y: 0 });
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Close menu on outside click
   useEffect(() => {
-    if (!menu.visible) return;
+    if (!menuVisible) return;
     function handleClick(e: Event) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenu((m) => ({ ...m, visible: false }));
+        setMenuVisible(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -221,51 +214,39 @@ function PartCard({
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('touchstart', handleClick);
     };
-  }, [menu.visible]);
+  }, [menuVisible]);
 
-  function openMenu(clientX: number, clientY: number) {
-    // Position relative to the card
-    const cardRect = cardRef.current?.getBoundingClientRect();
-    if (cardRect) {
-      setMenu({
-        visible: true,
-        x: clientX - cardRect.left,
-        y: clientY - cardRect.top,
-      });
+  // Reposition menu to stay within viewport
+  useEffect(() => {
+    if (!menuVisible || !menuRef.current || !cardRef.current) return;
+    const menuEl = menuRef.current;
+    const menuRect = menuEl.getBoundingClientRect();
+    const cardRect = cardRef.current.getBoundingClientRect();
+
+    // Check right overflow
+    if (menuRect.right > window.innerWidth) {
+      menuEl.style.left = 'auto';
+      menuEl.style.right = '0px';
     }
-  }
-
-  function handleTouchStart(e: React.TouchEvent) {
-    const touch = e.touches[0];
-    const x = touch.clientX;
-    const y = touch.clientY;
-    longPressTimer.current = setTimeout(() => {
-      openMenu(x, y);
-    }, 500);
-  }
-
-  function handleTouchEnd() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+    // Check bottom overflow
+    if (menuRect.bottom > window.innerHeight) {
+      menuEl.style.top = 'auto';
+      menuEl.style.bottom = `${cardRect.height}px`;
     }
-  }
+  }, [menuVisible]);
 
-  function handleTouchMove() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+  function toggleMenu() {
+    setMenuVisible((v) => !v);
   }
 
   function handleContextMenu(e: React.MouseEvent) {
     e.preventDefault();
-    openMenu(e.clientX, e.clientY);
+    toggleMenu();
   }
 
   function handleMenuAction(action: () => void) {
     action();
-    setMenu((m) => ({ ...m, visible: false }));
+    setMenuVisible(false);
   }
 
   return (
@@ -273,11 +254,8 @@ function PartCard({
       ref={cardRef}
       className={`part-card ${isComplete ? 'complete' : ''}`}
       onContextMenu={handleContextMenu}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchMove}
     >
-      <div className="part-img-container">
+      <div className="part-img-container" onClick={toggleMenu}>
         {part.part_img_url ? (
           <img src={part.part_img_url} alt={part.part_name} className="part-img" loading="lazy" />
         ) : (
@@ -294,7 +272,7 @@ function PartCard({
         >
           &minus;
         </button>
-        <span className="part-qty">
+        <span className="part-qty" onClick={toggleMenu}>
           {part.qty_found}/{part.qty_needed}
         </span>
         <button
@@ -306,8 +284,8 @@ function PartCard({
         </button>
       </div>
 
-      {menu.visible && (
-        <div ref={menuRef} className="context-menu" style={{ top: menu.y, left: menu.x }}>
+      {menuVisible && (
+        <div ref={menuRef} className="context-menu">
           <button
             className="context-menu-item"
             onClick={() => handleMenuAction(() => onIncrement(part.id, -part.qty_found))}
