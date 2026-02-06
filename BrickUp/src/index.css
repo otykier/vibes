@@ -277,8 +277,11 @@ body {
 }
 
 .part-card.complete {
-  opacity: 0.45;
   border-color: var(--success);
+}
+
+.part-card.complete > :not(.context-menu) {
+  opacity: 0.45;
 }
 
 .part-img-container {
