@@ -46,7 +46,11 @@ export default function Home() {
   return (
     <div className="home">
       <h1>BrickUp</h1>
-      <p>Look up a Lego set and collaboratively check off pieces.</p>
+      <p className="tagline">Collaborative LEGO set inventory checklist</p>
+
+      <div className="home-description">
+        <p>Enter a LEGO set number to get a checklist of every piece. Share the link and check off bricks together in real-time — perfect for sorting through a pile of loose bricks with friends or family.</p>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <input
@@ -57,11 +61,36 @@ export default function Home() {
           disabled={loading}
         />
         <button type="submit" disabled={loading || !setNum.trim()}>
-          {loading ? 'Loading...' : 'Start Session'}
+          {loading ? 'Loading...' : 'Go!'}
         </button>
       </form>
 
       {error && <p className="error">{error}</p>}
+
+      <div className="home-features">
+        <div className="feature">
+          <strong>Real-time sync</strong>
+          <span>Multiple people can check off pieces simultaneously</span>
+        </div>
+        <div className="feature">
+          <strong>QR sharing</strong>
+          <span>Share via link or QR code — no accounts needed</span>
+        </div>
+        <div className="feature">
+          <strong>Sort &amp; filter</strong>
+          <span>Organize by color, category, or completion status</span>
+        </div>
+      </div>
+
+      <a
+        className="powered-by"
+        href="https://rebrickable.com"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span>Powered by</span>
+        <img src="https://rebrickable.com/static/img/title.png" alt="Rebrickable" />
+      </a>
     </div>
   );
 }
