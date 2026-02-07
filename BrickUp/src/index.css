@@ -489,8 +489,61 @@ body {
   font-size: 0.875rem;
 }
 
-.spares-heading {
-  margin: 1.5rem 0 0.75rem;
-  font-size: 1rem;
+.group-section {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.group-header.collapsed {
+  border-bottom: none;
+}
+
+.group-header:hover {
+  background: var(--border);
+}
+
+.group-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-color-swatch {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.group-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s;
   color: var(--text-muted);
+}
+
+.group-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.group-content {
+  padding: 0.5rem;
 }

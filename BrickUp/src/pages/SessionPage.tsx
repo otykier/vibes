@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSession } from '../hooks/useSession';
 import type { SessionPart } from '../types';
+import { PART_CATEGORIES } from '../lib/categories';
 
 function useClipboard() {
   const [copied, setCopied] = useState(false);
@@ -79,8 +80,55 @@ export default function SessionPage() {
     });
   }
 
-  const displayParts = sortParts(filterParts(regularParts));
-  const displaySpares = sortParts(filterParts(spareParts));
+  const filteredRegular = sortParts(filterParts(regularParts));
+  const filteredSpares = sortParts(filterParts(spareParts));
+
+  // Group parts by the selected sort key
+  interface PartGroup {
+    label: string;
+    colorRgb?: string;
+    parts: SessionPart[];
+  }
+
+  function groupParts(items: SessionPart[]): PartGroup[] {
+    const groups: PartGroup[] = [];
+    const map = new Map<string, PartGroup>();
+
+    for (const p of items) {
+      let key: string;
+      let label: string;
+      let colorRgb: string | undefined;
+
+      switch (sortBy) {
+        case 'color':
+          key = `${p.color_id}`;
+          label = p.color_name;
+          colorRgb = p.color_rgb;
+          break;
+        case 'category':
+          key = p.category ?? 'Other';
+          label = p.category ? (PART_CATEGORIES[p.category] ?? `Category ${p.category}`) : 'Other';
+          break;
+        case 'status':
+          key = p.qty_found >= p.qty_needed ? 'complete' : 'incomplete';
+          label = p.qty_found >= p.qty_needed ? 'Complete' : 'Incomplete';
+          break;
+      }
+
+      let group = map.get(key);
+      if (!group) {
+        group = { label, colorRgb, parts: [] };
+        map.set(key, group);
+        groups.push(group);
+      }
+      group.parts.push(p);
+    }
+
+    return groups;
+  }
+
+  const regularGroups = groupParts(filteredRegular);
+  const spareGroups = groupParts(filteredSpares);
 
   // Check if "filter similar" would show multiple colors for a given part_num
   function hasSimilar(partNum: string) {
@@ -110,7 +158,7 @@ export default function SessionPage() {
 
         <div className="controls">
           <div className="control-group">
-            <label>Sort:</label>
+            <label>Group by:</label>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
               <option value="color">Color</option>
               <option value="category">Category</option>
@@ -136,7 +184,7 @@ export default function SessionPage() {
 
         {similarPartNum && (
           <div className="similar-filter-banner">
-            <span>All colors: {displayParts[0]?.part_name ?? similarPartNum}</span>
+            <span>All colors: {filteredRegular[0]?.part_name ?? similarPartNum}</span>
             <button className="btn-secondary" onClick={() => setSimilarPartNum(null)}>
               Clear
             </button>
@@ -157,31 +205,69 @@ export default function SessionPage() {
         )}
       </header>
 
-      <div className="parts-grid">
-        {displayParts.map((part) => (
-          <PartCard
-            key={part.id}
-            part={part}
-            onIncrement={incrementFound}
-            onFilterSimilar={hasSimilar(part.part_num) ? () => setSimilarPartNum(part.part_num) : undefined}
-          />
-        ))}
-      </div>
-
-      {displaySpares.length > 0 && (
-        <>
-          <h2 className="spares-heading">Spare Parts</h2>
+      {regularGroups.map((group) => (
+        <GroupSection
+          key={group.label}
+          label={group.label}
+          colorRgb={sortBy === 'color' ? group.colorRgb : undefined}
+        >
           <div className="parts-grid">
-            {displaySpares.map((part) => (
+            {group.parts.map((part) => (
               <PartCard
                 key={part.id}
                 part={part}
                 onIncrement={incrementFound}
+                onFilterSimilar={hasSimilar(part.part_num) ? () => setSimilarPartNum(part.part_num) : undefined}
               />
             ))}
           </div>
-        </>
+        </GroupSection>
+      ))}
+
+      {filteredSpares.length > 0 && (
+        <GroupSection label="Spare Parts" defaultCollapsed>
+          {spareGroups.map((group) => (
+            <div key={group.label} className="parts-grid">
+              {group.parts.map((part) => (
+                <PartCard
+                  key={part.id}
+                  part={part}
+                  onIncrement={incrementFound}
+                />
+              ))}
+            </div>
+          ))}
+        </GroupSection>
       )}
+    </div>
+  );
+}
+
+function GroupSection({
+  label,
+  colorRgb,
+  defaultCollapsed = false,
+  children,
+}: {
+  label: string;
+  colorRgb?: string;
+  defaultCollapsed?: boolean;
+  children: React.ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  return (
+    <div className="group-section">
+      <button className={`group-header ${collapsed ? 'collapsed' : ''}`} onClick={() => setCollapsed((c) => !c)}>
+        <span className="group-header-left">
+          {colorRgb && (
+            <span className="group-color-swatch" style={{ backgroundColor: `#${colorRgb}` }} />
+          )}
+          <span>{label}</span>
+        </span>
+        <span className={`group-chevron ${collapsed ? 'collapsed' : ''}`}>&#9660;</span>
+      </button>
+      {!collapsed && <div className="group-content">{children}</div>}
     </div>
   );
 }

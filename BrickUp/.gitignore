@@ -9,8 +9,10 @@ lerna-debug.log*
 
 node_modules
 dist
+deploy-staging
 .env
 .vite
+supabase/.temp
 dist-ssr
 *.local
 
