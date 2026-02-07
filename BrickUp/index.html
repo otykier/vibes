@@ -1,14 +1,15 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BrickUp</title>
-    <script type="module" crossorigin src="/vibes/BrickUp/assets/index-DCQf6iOS.js"></script>
-    <link rel="stylesheet" crossorigin href="/vibes/BrickUp/assets/index-Dw1f6l03.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting to brickup.dk</title>
+  <script>
+    var newUrl = 'https://brickup.dk' + window.location.pathname.replace('/vibes/BrickUp', '') + window.location.search + window.location.hash;
+    window.location.replace(newUrl);
+  </script>
+  <meta http-equiv="refresh" content="0;url=https://brickup.dk">
+</head>
+<body>
+  <p>Redirecting to <a href="https://brickup.dk">brickup.dk</a>...</p>
+</body>
 </html>
