@@ -25,7 +25,7 @@ type FilterKey = 'all' | 'found' | 'not-found' | 'complete';
 
 export default function SessionPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { data, loading, error, incrementFound, resetSession } = useSession(slug);
+  const { data, loading, error, incrementFound } = useSession(slug);
   const [sortBy, setSortBy] = useState<SortKey>('color');
   const [filterBy, setFilterBy] = useState<FilterKey>('all');
   const [similarPartNum, setSimilarPartNum] = useState<string | null>(null);
@@ -254,9 +254,6 @@ export default function SessionPage() {
           </div>
           <button className="btn-secondary" onClick={() => setShowQR(!showQR)}>
             {showQR ? 'Hide QR' : 'Share'}
-          </button>
-          <button className="btn-danger" onClick={() => { if (confirm('Reset all found counts to zero?')) resetSession(); }}>
-            Reset
           </button>
           <button
             className="btn-secondary btn-collapse-all"
