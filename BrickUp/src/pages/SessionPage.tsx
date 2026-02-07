@@ -352,11 +352,9 @@ function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleP
           <span>{label}</span>
           {found >= needed && needed > 0 && <span className="group-check">&#10003;</span>}
         </span>
-        <span className="group-header-right">
+        <span className={`group-header-right${dragHandleProps ? ' drag-area' : ''}`} {...(dragHandleProps ?? {})}>
           <span className="group-stats">{found}/{needed} ({pct}%)</span>
-          {dragHandleProps && (
-            <span className="group-drag-handle" title="Drag to reorder" {...dragHandleProps}>⠿</span>
-          )}
+          {dragHandleProps && <span className="group-drag-handle">⠿</span>}
         </span>
       </div>
       {!collapsed && <div className="group-content">{children}</div>}
