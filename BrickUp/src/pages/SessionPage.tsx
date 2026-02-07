@@ -393,6 +393,7 @@ function PartCard({
 }) {
   const isComplete = part.qty_found >= part.qty_needed;
   const [menuVisible, setMenuVisible] = useState(false);
+  const [addValue, setAddValue] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -482,20 +483,45 @@ function PartCard({
 
       {menuVisible && (
         <div ref={menuRef} className="context-menu">
-          <button
-            className="context-menu-item"
-            onClick={() => handleMenuAction(() => onIncrement(part.id, -part.qty_found))}
-            disabled={part.qty_found <= 0}
+          <div className="context-menu-quick">
+            <button
+              className="quick-btn quick-btn-reset"
+              onClick={() => handleMenuAction(() => onIncrement(part.id, -part.qty_found))}
+              disabled={part.qty_found <= 0}
+            >
+              <span className="quick-btn-value">&minus;{part.qty_found}</span>
+              <span className="quick-btn-label">Reset</span>
+            </button>
+            <button
+              className="quick-btn quick-btn-complete"
+              onClick={() => handleMenuAction(() => onIncrement(part.id, part.qty_needed - part.qty_found))}
+              disabled={isComplete}
+            >
+              <span className="quick-btn-value">+{part.qty_needed - part.qty_found}</span>
+              <span className="quick-btn-label">Complete</span>
+            </button>
+          </div>
+          <form
+            className="context-menu-add"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const n = parseInt(addValue, 10);
+              if (!isNaN(n) && n !== 0) {
+                onIncrement(part.id, n);
+              }
+              setAddValue('');
+              setMenuVisible(false);
+            }}
           >
-            Clear
-          </button>
-          <button
-            className="context-menu-item"
-            onClick={() => handleMenuAction(() => onIncrement(part.id, part.qty_needed - part.qty_found))}
-            disabled={isComplete}
-          >
-            Complete
-          </button>
+            <input
+              type="number"
+              className="add-input"
+              value={addValue}
+              onChange={(e) => setAddValue(e.target.value)}
+              placeholder="+/-"
+            />
+            <button type="submit" className="add-submit">Add</button>
+          </form>
           {onFilterSimilar && (
             <button
               className="context-menu-item"

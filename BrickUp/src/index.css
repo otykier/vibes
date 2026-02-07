@@ -453,8 +453,101 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  min-width: 160px;
+  width: 95%;
+  max-width: 220px;
   overflow: hidden;
+}
+
+.context-menu-quick {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem;
+}
+
+.quick-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.quick-btn:active:not(:disabled) {
+  background: var(--border);
+}
+
+.quick-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.quick-btn-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.quick-btn-reset .quick-btn-value {
+  color: #c62828;
+}
+
+.quick-btn-complete .quick-btn-value {
+  color: #2e7d32;
+}
+
+.quick-btn-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.context-menu-add {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  outline: none;
+  text-align: center;
+}
+
+.add-input:focus {
+  border-color: var(--accent);
+}
+
+.add-submit {
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  min-height: 44px;
+}
+
+.add-submit:active {
+  background: var(--border);
 }
 
 .context-menu-item {
@@ -463,23 +556,15 @@ body {
   padding: 0.625rem 1rem;
   border: none;
   background: none;
+  border-top: 1px solid var(--bg);
   font-size: 0.875rem;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  color: var(--text);
+  color: var(--text-muted);
 }
 
 .context-menu-item:active:not(:disabled) {
   background: var(--bg);
-}
-
-.context-menu-item:disabled {
-  color: var(--border);
-  cursor: default;
-}
-
-.context-menu-item + .context-menu-item {
-  border-top: 1px solid var(--bg);
 }
 
 /* Similar filter banner */
