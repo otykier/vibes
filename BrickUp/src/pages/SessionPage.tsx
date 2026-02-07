@@ -25,8 +25,15 @@ export default function SessionPage() {
   const [filterBy, setFilterBy] = useState<FilterKey>('all');
   const [similarPartNum, setSimilarPartNum] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['__spares__']));
+  const [groupOrder, setGroupOrder] = useState<string[] | null>(null);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const { copied, copy } = useClipboard();
   const shareUrl = window.location.origin + window.location.pathname + window.location.hash;
+
+  // Reset custom group order when sort key changes
+  useEffect(() => { setGroupOrder(null); }, [sortBy]);
 
   if (loading) return <div className="loading">Loading session...</div>;
   if (error) return <div className="error">Error: {error}</div>;
@@ -127,8 +134,67 @@ export default function SessionPage() {
     return groups;
   }
 
-  const regularGroups = groupParts(filteredRegular);
+  const rawGroups = groupParts(filteredRegular);
   const spareGroups = groupParts(filteredSpares);
+
+  // Apply custom order if set, otherwise use natural order
+  const regularGroups = groupOrder
+    ? [...rawGroups].sort((a, b) => {
+        const ai = groupOrder.indexOf(a.label);
+        const bi = groupOrder.indexOf(b.label);
+        return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+      })
+    : rawGroups;
+
+  const allGroupKeys = regularGroups.map((g) => g.label);
+  const allCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsedGroups.has(k));
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    if (allCollapsed) {
+      setCollapsedGroups(new Set());
+    } else {
+      setCollapsedGroups(new Set(allGroupKeys));
+    }
+  }
+
+  function handleDragStart(key: string) {
+    setDragKey(key);
+  }
+
+  function handleDragOver(key: string, e: React.DragEvent) {
+    e.preventDefault();
+    if (key !== dragKey) setDragOverKey(key);
+  }
+
+  function handleDrop(targetKey: string) {
+    if (!dragKey || dragKey === targetKey) {
+      setDragKey(null);
+      setDragOverKey(null);
+      return;
+    }
+    const keys = regularGroups.map((g) => g.label);
+    const fromIdx = keys.indexOf(dragKey);
+    const toIdx = keys.indexOf(targetKey);
+    if (fromIdx === -1 || toIdx === -1) return;
+    keys.splice(fromIdx, 1);
+    keys.splice(toIdx, 0, dragKey);
+    setGroupOrder(keys);
+    setDragKey(null);
+    setDragOverKey(null);
+  }
+
+  function handleDragEnd() {
+    setDragKey(null);
+    setDragOverKey(null);
+  }
 
   // Check if "filter similar" would show multiple colors for a given part_num
   function hasSimilar(partNum: string) {
@@ -180,6 +246,13 @@ export default function SessionPage() {
           <button className="btn-danger" onClick={() => { if (confirm('Reset all found counts to zero?')) resetSession(); }}>
             Reset
           </button>
+          <button
+            className="btn-secondary btn-collapse-all"
+            onClick={toggleAllGroups}
+            title={allCollapsed ? 'Expand all groups' : 'Collapse all groups'}
+          >
+            {allCollapsed ? '\u25BC' : '\u25B2'}
+          </button>
         </div>
 
         {similarPartNum && (
@@ -210,6 +283,15 @@ export default function SessionPage() {
           key={group.label}
           label={group.label}
           colorRgb={sortBy === 'color' ? group.colorRgb : undefined}
+          parts={group.parts}
+          collapsed={collapsedGroups.has(group.label)}
+          onToggle={() => toggleGroup(group.label)}
+          dragging={dragKey === group.label}
+          dragOver={dragOverKey === group.label}
+          onDragStart={() => handleDragStart(group.label)}
+          onDragOver={(e) => handleDragOver(group.label, e)}
+          onDrop={() => handleDrop(group.label)}
+          onDragEnd={handleDragEnd}
         >
           <div className="parts-grid">
             {group.parts.map((part) => (
@@ -225,7 +307,12 @@ export default function SessionPage() {
       ))}
 
       {filteredSpares.length > 0 && (
-        <GroupSection label="Spare Parts" defaultCollapsed>
+        <GroupSection
+          label="Spare Parts"
+          parts={filteredSpares}
+          collapsed={collapsedGroups.has('__spares__')}
+          onToggle={() => toggleGroup('__spares__')}
+        >
           {spareGroups.map((group) => (
             <div key={group.label} className="parts-grid">
               {group.parts.map((part) => (
@@ -246,28 +333,76 @@ export default function SessionPage() {
 function GroupSection({
   label,
   colorRgb,
+  parts,
+  collapsed,
+  onToggle,
   defaultCollapsed = false,
+  dragging,
+  dragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
   children,
 }: {
   label: string;
   colorRgb?: string;
+  parts: SessionPart[];
+  collapsed?: boolean;
+  onToggle?: () => void;
   defaultCollapsed?: boolean;
+  dragging?: boolean;
+  dragOver?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
+  onDragEnd?: () => void;
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [localCollapsed, setLocalCollapsed] = useState(defaultCollapsed);
+  const isCollapsed = collapsed ?? localCollapsed;
+  const handleToggle = onToggle ?? (() => setLocalCollapsed((c) => !c));
+
+  const found = parts.reduce((sum, p) => sum + p.qty_found, 0);
+  const needed = parts.reduce((sum, p) => sum + p.qty_needed, 0);
+  const pct = needed > 0 ? Math.round((found / needed) * 100) : 0;
+
+  const draggable = !!onDragStart;
 
   return (
-    <div className="group-section">
-      <button className={`group-header ${collapsed ? 'collapsed' : ''}`} onClick={() => setCollapsed((c) => !c)}>
-        <span className="group-header-left">
+    <div
+      className={`group-section${dragging ? ' dragging' : ''}${dragOver ? ' drag-over' : ''}`}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      <div className={`group-header ${isCollapsed ? 'collapsed' : ''}`}>
+        <span className="group-header-left" onClick={handleToggle}>
+          <span className={`group-chevron ${isCollapsed ? 'collapsed' : ''}`}>&#9660;</span>
           {colorRgb && (
             <span className="group-color-swatch" style={{ backgroundColor: `#${colorRgb}` }} />
           )}
           <span>{label}</span>
+          {found >= needed && needed > 0 && <span className="group-check">&#10003;</span>}
         </span>
-        <span className={`group-chevron ${collapsed ? 'collapsed' : ''}`}>&#9660;</span>
-      </button>
-      {!collapsed && <div className="group-content">{children}</div>}
+        <span className="group-header-right">
+          <span className="group-stats">{found}/{needed} ({pct}%)</span>
+          {draggable && (
+            <span
+              className="group-drag-handle"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                onDragStart();
+              }}
+              onDragEnd={onDragEnd}
+              title="Drag to reorder"
+            >
+              ⠿
+            </span>
+          )}
+        </span>
+      </div>
+      {!isCollapsed && <div className="group-content">{children}</div>}
     </div>
   );
 }

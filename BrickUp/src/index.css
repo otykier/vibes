@@ -230,6 +230,13 @@ body {
   margin-bottom: 1rem;
 }
 
+.btn-collapse-all {
+  margin-left: auto;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
 .control-group {
   display: flex;
   align-items: center;
@@ -502,10 +509,9 @@ body {
   justify-content: space-between;
   width: 100%;
   padding: 0.6rem 0.75rem;
-  background: var(--surface);
+  background: #e8e8e8;
   border: none;
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
@@ -516,13 +522,21 @@ body {
 }
 
 .group-header:hover {
-  background: var(--border);
+  background: #d8d8d8;
 }
 
 .group-header-left {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.group-check {
+  color: #2e7d32;
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .group-color-swatch {
@@ -534,6 +548,18 @@ body {
   flex-shrink: 0;
 }
 
+.group-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-stats {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .group-chevron {
   font-size: 0.75rem;
   transition: transform 0.2s;
@@ -542,6 +568,27 @@ body {
 
 .group-chevron.collapsed {
   transform: rotate(-90deg);
+}
+
+.group-drag-handle {
+  cursor: grab;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+  user-select: none;
+}
+
+.group-drag-handle:active {
+  cursor: grabbing;
+}
+
+.group-section.dragging {
+  opacity: 0.4;
+}
+
+.group-section.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .group-content {
