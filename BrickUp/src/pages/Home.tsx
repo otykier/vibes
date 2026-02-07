@@ -1,14 +1,20 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { nanoid } from 'nanoid';
 import { fetchSetWithParts } from '../lib/rebrickable';
 import { supabase } from '../lib/supabase';
+import { getRecentSessions, saveRecentSession, timeAgo, type RecentSession } from '../lib/recentSessions';
 
 export default function Home() {
   const [setNum, setSetNum] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setRecentSessions(getRecentSessions());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +37,17 @@ export default function Home() {
       });
 
       if (rpcError) throw new Error(rpcError.message);
+
+      const totalNeeded = parts.filter((p) => !p.is_spare).reduce((sum, p) => sum + p.qty_needed, 0);
+      saveRecentSession({
+        slug,
+        set_num: setInfo.set_num,
+        set_name: setInfo.name,
+        set_img_url: setInfo.set_img_url,
+        totalFound: 0,
+        totalNeeded,
+      });
+      setRecentSessions(getRecentSessions());
 
       navigate(`/s/${slug}`);
     } catch (err) {
@@ -63,6 +80,45 @@ export default function Home() {
       </form>
 
       {error && <p className="error">{error}</p>}
+
+      {recentSessions.length > 0 && (
+        <div className="recent-sessions">
+          <h2>Recent sessions</h2>
+          {recentSessions.map((s) => {
+            const pct = s.totalNeeded > 0 ? Math.round((s.totalFound / s.totalNeeded) * 100) : 0;
+            return (
+              <Link key={s.slug} to={`/s/${s.slug}`} className="recent-session-card">
+                {s.set_img_url ? (
+                  <img src={s.set_img_url} alt={s.set_name} className="recent-session-img" />
+                ) : (
+                  <div className="recent-session-img-placeholder" />
+                )}
+                <div className="recent-session-text">
+                  <span className="recent-session-name">{s.set_name}</span>
+                  <span className="recent-session-num">{s.set_num}</span>
+                  {s.totalNeeded > 0 && (
+                    <div className="recent-session-progress">
+                      <div className="recent-session-progress-bar">
+                        <div className="recent-session-progress-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="recent-session-pct">{pct}%</span>
+                    </div>
+                  )}
+                </div>
+                <div className="recent-session-meta">
+                  <span
+                    className="recent-session-time"
+                    title={new Date(s.timestamp).toLocaleString()}
+                  >
+                    {timeAgo(s.timestamp)}
+                  </span>
+                  <span className="recent-session-arrow">&#8250;</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <div className="home-features">
         <div className="feature">

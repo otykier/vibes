@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useSession } from '../hooks/useSession';
 import type { SessionPart } from '../types';
 import { PART_CATEGORIES } from '../lib/categories';
+import { saveRecentSession } from '../lib/recentSessions';
 
 function useClipboard() {
   const [copied, setCopied] = useState(false);
@@ -41,6 +42,20 @@ export default function SessionPage() {
 
   // Reset custom group order when sort key changes
   useEffect(() => { setGroupOrder(null); }, [sortBy]);
+
+  // Save to recent sessions when data loads or progress changes
+  useEffect(() => {
+    if (!data) return;
+    const regular = data.parts.filter((p) => !p.is_spare);
+    saveRecentSession({
+      slug: data.session.slug,
+      set_num: data.session.set_num,
+      set_name: data.session.set_name,
+      set_img_url: data.session.set_img_url,
+      totalFound: regular.reduce((sum, p) => sum + p.qty_found, 0),
+      totalNeeded: regular.reduce((sum, p) => sum + p.qty_needed, 0),
+    });
+  }, [data]);
 
   if (loading) return <div className="loading">Loading session...</div>;
   if (error) return <div className="error">Error: {error}</div>;
@@ -193,6 +208,7 @@ export default function SessionPage() {
   return (
     <div className="session-page">
       <header className="session-header">
+        <Link to="/" className="home-link">BrickUp</Link>
         <div className="session-info">
           {session.set_img_url && <img src={session.set_img_url} alt={session.set_name} className="set-thumb" />}
           <div>
@@ -349,11 +365,14 @@ function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleP
           {colorRgb && (
             <span className="group-color-swatch" style={{ backgroundColor: `#${colorRgb}` }} />
           )}
-          <span>{label}</span>
+          <span>{label} <span className="group-count">({parts.length})</span></span>
           {found >= needed && needed > 0 && <span className="group-check">&#10003;</span>}
         </span>
         <span className="group-header-right">
-          <span className="group-stats">{found}/{needed} ({pct}%)</span>
+          <span className="group-stats">{found}/{needed}</span>
+          <span className="group-progress-bar">
+            <span className="group-progress-fill" style={{ width: `${pct}%` }} />
+          </span>
           {dragHandleProps && (
             <span className="group-drag-handle" onClick={(e) => e.stopPropagation()} {...dragHandleProps}>⠿</span>
           )}
