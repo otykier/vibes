@@ -512,6 +512,7 @@ body {
   background: #e8e8e8;
   border: none;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
@@ -529,7 +530,6 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
   flex: 1;
 }
 

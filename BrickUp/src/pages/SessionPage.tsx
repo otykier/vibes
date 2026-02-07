@@ -343,8 +343,8 @@ function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleP
 
   return (
     <div ref={outerRef} className="group-section" style={style}>
-      <div className={`group-header ${collapsed ? 'collapsed' : ''}`}>
-        <span className="group-header-left" onClick={onToggle}>
+      <div className={`group-header ${collapsed ? 'collapsed' : ''}`} onClick={onToggle}>
+        <span className="group-header-left">
           <span className={`group-chevron ${collapsed ? 'collapsed' : ''}`}>&#9660;</span>
           {colorRgb && (
             <span className="group-color-swatch" style={{ backgroundColor: `#${colorRgb}` }} />
@@ -355,7 +355,7 @@ function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleP
         <span className="group-header-right">
           <span className="group-stats">{found}/{needed} ({pct}%)</span>
           {dragHandleProps && (
-            <span className="group-drag-handle" {...dragHandleProps}>⠿</span>
+            <span className="group-drag-handle" onClick={(e) => e.stopPropagation()} {...dragHandleProps}>⠿</span>
           )}
         </span>
       </div>
