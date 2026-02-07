@@ -144,6 +144,14 @@ export default function Home() {
         <span>Powered by</span>
         <img src="https://rebrickable.com/static/img/title.png" alt="Rebrickable" />
       </a>
+
+      <div className="home-footer">
+        <span>Made by Daniel Otykier</span>
+        <div className="home-footer-links">
+          <a href="https://github.com/otykier" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://www.linkedin.com/in/dotykier/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+      </div>
     </div>
   );
 }

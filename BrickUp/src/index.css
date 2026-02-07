@@ -274,6 +274,30 @@ body {
   color: var(--text-muted);
 }
 
+.home-footer {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.home-footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.home-footer-links a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--border);
+}
+
+.home-footer-links a:hover {
+  text-decoration-color: var(--text-muted);
+}
+
 /* Session page */
 
 .session-page {
