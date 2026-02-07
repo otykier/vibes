@@ -425,11 +425,6 @@ body {
   cursor: default;
 }
 
-.counter-btn-big {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 .part-qty {
   font-size: 0.875rem;
   font-weight: 700;
