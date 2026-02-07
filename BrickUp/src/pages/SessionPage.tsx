@@ -1,6 +1,10 @@
 import { useParams } from 'react-router-dom';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useSession } from '../hooks/useSession';
 import type { SessionPart } from '../types';
 import { PART_CATEGORIES } from '../lib/categories';
@@ -27,10 +31,13 @@ export default function SessionPage() {
   const [showQR, setShowQR] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['__spares__']));
   const [groupOrder, setGroupOrder] = useState<string[] | null>(null);
-  const [dragKey, setDragKey] = useState<string | null>(null);
-  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const { copied, copy } = useClipboard();
   const shareUrl = window.location.origin + window.location.pathname + window.location.hash;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
 
   // Reset custom group order when sort key changes
   useEffect(() => { setGroupOrder(null); }, [sortBy]);
@@ -165,35 +172,16 @@ export default function SessionPage() {
     }
   }
 
-  function handleDragStart(key: string) {
-    setDragKey(key);
-  }
-
-  function handleDragOver(key: string, e: React.DragEvent) {
-    e.preventDefault();
-    if (key !== dragKey) setDragOverKey(key);
-  }
-
-  function handleDrop(targetKey: string) {
-    if (!dragKey || dragKey === targetKey) {
-      setDragKey(null);
-      setDragOverKey(null);
-      return;
-    }
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
     const keys = regularGroups.map((g) => g.label);
-    const fromIdx = keys.indexOf(dragKey);
-    const toIdx = keys.indexOf(targetKey);
+    const fromIdx = keys.indexOf(active.id as string);
+    const toIdx = keys.indexOf(over.id as string);
     if (fromIdx === -1 || toIdx === -1) return;
     keys.splice(fromIdx, 1);
-    keys.splice(toIdx, 0, dragKey);
+    keys.splice(toIdx, 0, active.id as string);
     setGroupOrder(keys);
-    setDragKey(null);
-    setDragOverKey(null);
-  }
-
-  function handleDragEnd() {
-    setDragKey(null);
-    setDragOverKey(null);
   }
 
   // Check if "filter similar" would show multiple colors for a given part_num
@@ -278,33 +266,39 @@ export default function SessionPage() {
         )}
       </header>
 
-      {regularGroups.map((group) => (
-        <GroupSection
-          key={group.label}
-          label={group.label}
-          colorRgb={sortBy === 'color' ? group.colorRgb : undefined}
-          parts={group.parts}
-          collapsed={collapsedGroups.has(group.label)}
-          onToggle={() => toggleGroup(group.label)}
-          dragging={dragKey === group.label}
-          dragOver={dragOverKey === group.label}
-          onDragStart={() => handleDragStart(group.label)}
-          onDragOver={(e) => handleDragOver(group.label, e)}
-          onDrop={() => handleDrop(group.label)}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="parts-grid">
-            {group.parts.map((part) => (
-              <PartCard
-                key={part.id}
-                part={part}
-                onIncrement={incrementFound}
-                onFilterSimilar={hasSimilar(part.part_num) ? () => setSimilarPartNum(part.part_num) : undefined}
-              />
-            ))}
-          </div>
-        </GroupSection>
-      ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={() => {
+          setCollapsedGroups((prev) => new Set([...prev, ...regularGroups.map((g) => g.label)]));
+        }}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={regularGroups.map((g) => g.label)} strategy={verticalListSortingStrategy}>
+          {regularGroups.map((group) => (
+            <SortableGroupSection
+              key={group.label}
+              id={group.label}
+              label={group.label}
+              colorRgb={sortBy === 'color' ? group.colorRgb : undefined}
+              parts={group.parts}
+              collapsed={collapsedGroups.has(group.label)}
+              onToggle={() => toggleGroup(group.label)}
+            >
+              <div className="parts-grid">
+                {group.parts.map((part) => (
+                  <PartCard
+                    key={part.id}
+                    part={part}
+                    onIncrement={incrementFound}
+                    onFilterSimilar={hasSimilar(part.part_num) ? () => setSimilarPartNum(part.part_num) : undefined}
+                  />
+                ))}
+              </div>
+            </SortableGroupSection>
+          ))}
+        </SortableContext>
+      </DndContext>
 
       {filteredSpares.length > 0 && (
         <GroupSection
@@ -330,54 +324,28 @@ export default function SessionPage() {
   );
 }
 
-function GroupSection({
-  label,
-  colorRgb,
-  parts,
-  collapsed,
-  onToggle,
-  defaultCollapsed = false,
-  dragging,
-  dragOver,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
-  children,
-}: {
+interface GroupSectionProps {
   label: string;
   colorRgb?: string;
   parts: SessionPart[];
-  collapsed?: boolean;
-  onToggle?: () => void;
-  defaultCollapsed?: boolean;
-  dragging?: boolean;
-  dragOver?: boolean;
-  onDragStart?: () => void;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDrop?: () => void;
-  onDragEnd?: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
+  style?: React.CSSProperties;
+  outerRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
-}) {
-  const [localCollapsed, setLocalCollapsed] = useState(defaultCollapsed);
-  const isCollapsed = collapsed ?? localCollapsed;
-  const handleToggle = onToggle ?? (() => setLocalCollapsed((c) => !c));
+}
 
+function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleProps, style, outerRef, children }: GroupSectionProps) {
   const found = parts.reduce((sum, p) => sum + p.qty_found, 0);
   const needed = parts.reduce((sum, p) => sum + p.qty_needed, 0);
   const pct = needed > 0 ? Math.round((found / needed) * 100) : 0;
 
-  const draggable = !!onDragStart;
-
   return (
-    <div
-      className={`group-section${dragging ? ' dragging' : ''}${dragOver ? ' drag-over' : ''}`}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-    >
-      <div className={`group-header ${isCollapsed ? 'collapsed' : ''}`}>
-        <span className="group-header-left" onClick={handleToggle}>
-          <span className={`group-chevron ${isCollapsed ? 'collapsed' : ''}`}>&#9660;</span>
+    <div ref={outerRef} className="group-section" style={style}>
+      <div className={`group-header ${collapsed ? 'collapsed' : ''}`}>
+        <span className="group-header-left" onClick={onToggle}>
+          <span className={`group-chevron ${collapsed ? 'collapsed' : ''}`}>&#9660;</span>
           {colorRgb && (
             <span className="group-color-swatch" style={{ backgroundColor: `#${colorRgb}` }} />
           )}
@@ -386,24 +354,31 @@ function GroupSection({
         </span>
         <span className="group-header-right">
           <span className="group-stats">{found}/{needed} ({pct}%)</span>
-          {draggable && (
-            <span
-              className="group-drag-handle"
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.effectAllowed = 'move';
-                onDragStart();
-              }}
-              onDragEnd={onDragEnd}
-              title="Drag to reorder"
-            >
-              ⠿
-            </span>
+          {dragHandleProps && (
+            <span className="group-drag-handle" title="Drag to reorder" {...dragHandleProps}>⠿</span>
           )}
         </span>
       </div>
-      {!isCollapsed && <div className="group-content">{children}</div>}
+      {!collapsed && <div className="group-content">{children}</div>}
     </div>
+  );
+}
+
+function SortableGroupSection({ id, ...props }: GroupSectionProps & { id: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : undefined,
+  };
+
+  return (
+    <GroupSection
+      {...props}
+      outerRef={setNodeRef}
+      style={style}
+      dragHandleProps={{ ...attributes, ...listeners }}
+    />
   );
 }
 

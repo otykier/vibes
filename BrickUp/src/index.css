@@ -497,7 +497,7 @@ body {
 }
 
 .group-section {
-  margin-top: 1rem;
+  margin-top: 0.4rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -508,7 +508,7 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   background: #e8e8e8;
   border: none;
   border-bottom: 1px solid var(--border);
@@ -580,15 +580,6 @@ body {
 
 .group-drag-handle:active {
   cursor: grabbing;
-}
-
-.group-section.dragging {
-  opacity: 0.4;
-}
-
-.group-section.drag-over {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .group-content {
