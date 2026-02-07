@@ -213,7 +213,15 @@ export default function SessionPage() {
           {session.set_img_url && <img src={session.set_img_url} alt={session.set_name} className="set-thumb" />}
           <div>
             <h1>{session.set_name}</h1>
-            <p className="set-num">{session.set_num}</p>
+            <p className="set-num">
+              <a
+                href={`https://rebrickable.com/sets/${session.set_num}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {session.set_num}
+              </a>
+            </p>
           </div>
         </div>
 

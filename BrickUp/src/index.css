@@ -324,6 +324,17 @@ body {
   font-size: 0.875rem;
 }
 
+.set-num a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--border);
+}
+
+.set-num a:hover {
+  text-decoration-color: var(--text-muted);
+}
+
 /* Progress */
 
 .progress {

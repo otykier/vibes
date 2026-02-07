@@ -71,7 +71,7 @@ export default function Home() {
           type="text"
           value={setNum}
           onChange={(e) => setSetNum(e.target.value)}
-          placeholder="Enter set number (e.g. 42100)"
+          placeholder="Enter set number (e.g. 10713)"
           disabled={loading}
         />
         <button type="submit" disabled={loading || !setNum.trim()}>
