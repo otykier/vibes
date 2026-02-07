@@ -392,6 +392,7 @@ function PartCard({
   onFilterSimilar?: () => void;
 }) {
   const isComplete = part.qty_found >= part.qty_needed;
+  const bigStep = part.qty_needed >= 30 ? 10 : part.qty_needed >= 10 ? 5 : 0;
   const [menuVisible, setMenuVisible] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -461,6 +462,15 @@ function PartCard({
       <div className="color-swatch" style={{ backgroundColor: `#${part.color_rgb}` }} title={part.color_name} />
       <span className="part-name">{part.part_name}</span>
       <div className="part-counter">
+        {bigStep > 0 && (
+          <button
+            className="counter-btn counter-btn-big"
+            onClick={() => onIncrement(part.id, -bigStep)}
+            disabled={part.qty_found <= 0}
+          >
+            &minus;{bigStep}
+          </button>
+        )}
         <button
           className="counter-btn"
           onClick={() => onIncrement(part.id, -1)}
@@ -478,6 +488,15 @@ function PartCard({
         >
           +
         </button>
+        {bigStep > 0 && (
+          <button
+            className="counter-btn counter-btn-big"
+            onClick={() => onIncrement(part.id, bigStep)}
+            disabled={isComplete}
+          >
+            +{bigStep}
+          </button>
+        )}
       </div>
 
       {menuVisible && (
