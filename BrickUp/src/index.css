@@ -554,16 +554,6 @@ body {
   gap: 0.5rem;
 }
 
-.group-header-right.drag-area {
-  cursor: grab;
-  padding: 0.5rem;
-  margin: -0.5rem -0.75rem -0.5rem 0;
-  touch-action: none;
-}
-
-.group-header-right.drag-area:active {
-  cursor: grabbing;
-}
 
 .group-stats {
   font-size: 0.8rem;
@@ -582,9 +572,17 @@ body {
 }
 
 .group-drag-handle {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: var(--text-muted);
   user-select: none;
+  cursor: grab;
+  touch-action: none;
+  padding: 0.5rem 0.75rem;
+  margin: -0.5rem -0.75rem -0.5rem 0;
+}
+
+.group-drag-handle:active {
+  cursor: grabbing;
 }
 
 .group-content {

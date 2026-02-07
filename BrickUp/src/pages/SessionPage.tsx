@@ -66,7 +66,7 @@ export default function SessionPage() {
 
     switch (filterBy) {
       case 'found':
-        return result.filter((p) => p.qty_found > 0);
+        return result.filter((p) => p.qty_found > 0 && p.qty_found < p.qty_needed);
       case 'not-found':
         return result.filter((p) => p.qty_found < p.qty_needed);
       case 'complete':
@@ -352,9 +352,11 @@ function GroupSection({ label, colorRgb, parts, collapsed, onToggle, dragHandleP
           <span>{label}</span>
           {found >= needed && needed > 0 && <span className="group-check">&#10003;</span>}
         </span>
-        <span className={`group-header-right${dragHandleProps ? ' drag-area' : ''}`} {...(dragHandleProps ?? {})}>
+        <span className="group-header-right">
           <span className="group-stats">{found}/{needed} ({pct}%)</span>
-          {dragHandleProps && <span className="group-drag-handle">⠿</span>}
+          {dragHandleProps && (
+            <span className="group-drag-handle" {...dragHandleProps}>⠿</span>
+          )}
         </span>
       </div>
       {!collapsed && <div className="group-content">{children}</div>}
