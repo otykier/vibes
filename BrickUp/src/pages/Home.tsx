@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { nanoid } from 'nanoid';
-import { fetchSet, fetchSetParts } from '../lib/rebrickable';
+import { fetchSetWithParts } from '../lib/rebrickable';
 import { supabase } from '../lib/supabase';
 
 export default function Home() {
@@ -18,10 +18,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const [setInfo, parts] = await Promise.all([
-        fetchSet(setNum.trim()),
-        fetchSetParts(setNum.trim()),
-      ]);
+      const { set: setInfo, parts } = await fetchSetWithParts(setNum.trim());
 
       const slug = nanoid(12);
 
